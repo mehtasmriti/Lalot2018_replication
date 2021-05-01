@@ -119,10 +119,10 @@ dem_vars <- {
 
 # recoding and retaining relevant variables,
 # filtering out those who did not see a condition
-DF <- { DF_full %>%
+{ DF <-  DF_full %>%
   dplyr::mutate_at(geb_1_rev_vars, rev_code_geb_1) %>%
   dplyr::mutate_at(geb_2_rev_vars, rev_code_geb_2) %>%
-  rename(`geb_3` = geb_3_R,
+  dplyr::rename(`geb_3` = geb_3_R,
          `geb_4` = geb_4_R,
          `geb_5`= geb_5_R,
          `geb_8` = geb_8_R,
@@ -141,7 +141,7 @@ DF <- { DF_full %>%
          `geb_43` = geb_43_R,
          `geb_44` = geb_44_R,
          `condition` = FL_10_DO) %>%
-  select(ResponseId, condition, attn_check, all_of(dem_vars),
+  dplyr::select(ResponseId, condition, attn_check, all_of(dem_vars),
          all_of(geb_1_vars), all_of(geb_2_vars), all_of(xmas_eval_vars)) %>%
     filter(!is.na(condition))
 }
@@ -160,12 +160,12 @@ table(DF$condition)
   
 
 # ############################################################
-#                CREATING GEB DF FOR CONQUEST
+#                CREATING GEB DFs FOR CONQUEST
 # ############################################################
 
 
 GEB <- DF %>%
-  select(all_of(geb_1_vars), all_of(geb_2_vars))
+  dplyr::select(all_of(geb_1_vars), all_of(geb_2_vars))
 
 #Creating file for Conquest
 GEB_C <- GEB %>%
@@ -176,7 +176,7 @@ GEB_C <- GEB %>%
 
 
 GEB_short <- GEB %>%
-  select(-c(geb_10, geb_11, geb_18))
+  dplyr::select(-c(geb_10, geb_11, geb_18))
 
 GEB_short_C <- GEB_short %>%
  mutate_all(subtract_1) %>%
@@ -256,8 +256,11 @@ contrasts(DF$condition) <- mat
 mod <- lm(xmas_eval ~  geb_wle + condition + geb_wle*condition, data = DF)
 
 summary(mod) 
+#GEB scale has a significant main effect, 
+#along with the interaction of GEB and the contrrast that is NOT of interest 
 
 Anova(mod, type = "III")
+
 
 
 # ############################################################
@@ -282,7 +285,7 @@ Anova(mod, type = "III")
 
 ### original study
 Lalot.orig.es <- esComp(x = -2.96, df2 = 204, N = 210, esType = "t")
-Lalot.orig.es #.20
+Lalot.orig.es # 0.2029295
 
 # calculate 95% CI
 CIr(r= Lalot.orig.es, n = 210, level = .95) # 0.06944706 - 0.32927320
@@ -290,7 +293,7 @@ CIr(r= Lalot.orig.es, n = 210, level = .95) # 0.06944706 - 0.32927320
 
 ### replication study
 Lalot.rep.es <- esComp(x = 0.843, df2 = 521, N = 540, esType = "t")
-Lalot.rep.es #0.04
+Lalot.rep.es #0.03690734
 
 
 # calculate 95% CI
@@ -374,3 +377,16 @@ est.compare$diff <- est.compare$con_wle_est - est.compare$wle_estimates
 
 View(est.compare)
 
+
+# ############################################################
+#                         TABLES AND PLOTS
+# ############################################################
+
+DF %>% 
+  dplyr::group_by(condition) %>% 
+  dplyr::summarize(`Mean` = round(NaMean(xmas_eval), 2),
+            `SD` = round(sd(xmas_eval, na.rm = T), 2), 
+            `SD + 1` = `Mean` + `SD`, 
+            `SD - 1` = `Mean` - `SD`) %>% 
+  View
+DF_full$FL_10_DO
