@@ -146,6 +146,9 @@ DF <- { DF_full %>%
     filter(!is.na(condition))
 }
 
+#Third items in the DV scale needs to be recoded
+DF$xmas_eval_3 <- 8 - DF$xmas_eval_3
+
 #participants that did not answer any of the items
 all.na <- apply(DF[,7:59], 1, function(x){all(is.na(x))})
 
@@ -159,25 +162,26 @@ table(DF$condition)
 # ############################################################
 #                CREATING GEB DF FOR CONQUEST
 # ############################################################
- 
-# GEB <- DF %>% 
-#   select(all_of(geb_1_vars), all_of(geb_2_vars))
+
+
+GEB <- DF %>%
+  select(all_of(geb_1_vars), all_of(geb_2_vars))
 
 #Creating file for Conquest
-#GEB_C <- GEB %>% 
-#  mutate_all(subtract_1) %>% 
-#  mutate_all(na_to_dot)
+GEB_C <- GEB %>%
+ mutate_all(subtract_1) %>%
+ mutate_all(na_to_dot)
 
 #write_csv(GEB_C, "geb_data.csv")
 
 
-GEB_short <- GEB %>% 
+GEB_short <- GEB %>%
   select(-c(geb_10, geb_11, geb_18))
 
-#GEB_short_C <- GEB_short %>% 
-#  mutate_all(subtract_1) %>% 
-#  mutate_all(na_to_dot)
-  
+GEB_short_C <- GEB_short %>%
+ mutate_all(subtract_1) %>%
+ mutate_all(na_to_dot)
+
 #write_csv(GEB_short_C, "geb_short_data.csv")
   
 
@@ -186,7 +190,7 @@ GEB_short <- GEB %>%
 # ############################################################
 
 ### GEB Complete Scale
-geb_mod <- TAM::tam.mml(GEB, irtmodel="PCM2")
+geb_mod <- TAM::tam.mml(GEB, irtmodel="PCM2", )
 
 geb_mod_fit <- tam.fit(geb_mod)
 
@@ -271,8 +275,8 @@ Anova(mod, type = "III")
 # N = 210
 
 #replication stats:  
-# t(521) = -0.432
-# η2 = 0.0004
+# t(521) = 0.843
+# η2 = .01
 # N = 540
 
 
@@ -285,12 +289,12 @@ CIr(r= Lalot.orig.es, n = 210, level = .95) # 0.06944706 - 0.32927320
 
 
 ### replication study
-Lalot.rep.es <- esComp(x = -0.432, df2 = 521, N = 540, esType = "t")
-Lalot.rep.es #0.019
+Lalot.rep.es <- esComp(x = 0.843, df2 = 521, N = 540, esType = "t")
+Lalot.rep.es #0.04
 
 
 # calculate 95% CI
-CIr(r= Lalot.rep.es, n = 540, level = .95) # -0.06555939 - 0.10313579
+CIr(r= Lalot.rep.es, n = 540, level = .95) # -0.04761854  0.12090840
 
 
 Lalot.rep.upper <- round( # store upper bound of CI
@@ -298,7 +302,7 @@ Lalot.rep.upper <- round( # store upper bound of CI
       n = 540, 
       level = .95)[2], # calculate 95% CI, extract upper bound ([2])
   7) # round to 7 digits
-#0.1031358
+#0.1209084
 
 
 
@@ -309,20 +313,20 @@ Lalot.rep.upper <- round( # store upper bound of CI
 # POINT ESTIMATE 
 
 # original study's power to detect replication effect 
-pwr.r.test(n = 210, r = Lalot.rep.es, sig.level = .05) # 0.05849264
+pwr.r.test(n = 210, r = Lalot.rep.es, sig.level = .05) # 0.08296258
 
 # N needed for 80% power to detect effect
-pwr.r.test(r = Lalot.rep.es, sig.level = .05, power = .80) # 21916.45
+pwr.r.test(r = Lalot.rep.es, sig.level = .05, power = .80) # 5758.97
 
 
 
 ### UPPER BOUND 
 
 # original study's power to detect replication upper bound effect size
-pwr.r.test(n = 210, r = Lalot.rep.upper, sig.level = .05) # 0.320203
+pwr.r.test(n = 210, r = Lalot.rep.upper, sig.level = .05) # 0.4175867
 
 # N needed for 80% power to detect effect
-pwr.r.test(r = Lalot.rep.upper, sig.level = .05, power = .80) #734.7489
+pwr.r.test(r = Lalot.rep.upper, sig.level = .05, power = .80) #533.7658
 
 
 # ############################################################
@@ -353,7 +357,7 @@ summary(mod.short)
 
 Anova(mod.short, type = "III")
 
-#results remain unchanged
+#results remain unchanged. 
 
 
 
