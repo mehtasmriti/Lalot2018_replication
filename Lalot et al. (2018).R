@@ -189,8 +189,11 @@ GEB_short_C <- GEB_short %>%
 #        APPLYING RASCH MODEL TO GEB SCALE
 # ############################################################
 
+res<- TAM::tam_NA_pattern(GEB) 
+str(res)
+
 ### GEB Complete Scale
-geb_mod <- TAM::tam.mml(GEB, irtmodel="PCM2", )
+geb_mod <- TAM::tam.mml(GEB, irtmodel="PCM2")
 
 geb_mod_fit <- tam.fit(geb_mod)
 
@@ -255,11 +258,15 @@ contrasts(DF$condition) <- mat
 #Creating the model
 mod <- lm(xmas_eval ~  geb_wle + condition + geb_wle*condition, data = DF)
 
-summary(mod) 
+mod.sum <- summary(mod) 
+
 #GEB scale has a significant main effect, 
 #along with the interaction of GEB and the contrrast that is NOT of interest 
 
 Anova(mod, type = "III")
+
+#Confidence intervals for the model
+confint(mod)
 
 
 
@@ -379,14 +386,61 @@ View(est.compare)
 
 
 # ############################################################
+#                     DESCRIPTIVE STATS
+# ############################################################
+
+NaMean(DF$age)
+sd(DF$age)
+
+DF %>% 
+  dplyr::group_by(gender) %>% 
+  summarize(N = n(), 
+            )
+
+# ############################################################
 #                         TABLES AND PLOTS
 # ############################################################
 
-DF %>% 
-  dplyr::group_by(condition) %>% 
-  dplyr::summarize(`Mean` = round(NaMean(xmas_eval), 2),
-            `SD` = round(sd(xmas_eval, na.rm = T), 2), 
-            `SD + 1` = `Mean` + `SD`, 
-            `SD - 1` = `Mean` - `SD`) %>% 
-  View
-DF_full$FL_10_DO
+Plus_1 <- NaMean(DF$geb_wle) + sd(DF$geb_wle)
+Minus_1 <- NaMean(DF$geb_wle) - sd(DF$geb_wle)
+
+newdf <- data.table(condition=rep(c('ControlCondition',
+                                    'MajorityCondition', 
+                                    'MinorityCondition'), each=2), 
+                    geb_wle = c(Minus_1, Plus_1))
+
+newdf$pred <- predict(mod, newdata = newdf,se.fit=TRUE)$fit
+
+newdf <- rbind(newdf[1:2,], newdf[5:6,], newdf[3:4,])
+
+newdf$condition <- ifelse(newdf$condition %in% "ControlCondition", "Control condition", 
+       ifelse(newdf$condition %in% "MinorityCondition", "Minority support", 
+              ifelse(newdf$condition %in% "MajorityCondition", "Majority support", newdf$condition)))
+
+newdf$condition <- factor(newdf$condition, levels = c("Control condition", "Minority support", "Majority support"))
+
+
+
+p <-  ggplot(newdf, aes(x=geb_wle, y=pred, col=condition)) +
+  geom_point(size = 2) +
+  geom_path(aes(linetype=condition), size = 1) + 
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 12), 
+        legend.title = element_blank(), 
+        panel.background = element_rect(fill = "white"), 
+        panel.grid.minor.y = element_line(color = "gray"), 
+        legend.background = element_rect(fill = "white"),
+        legend.text = element_text(size = 8), 
+        axis.title.x = element_text(size = 12)) + 
+  scale_linetype_manual(values=c("dashed", "solid", "solid")) + 
+  scale_color_manual(values = c("darkgray", "darkgray", "black")) +
+  ylim(c(4, 6.5)) + 
+  xlim(c(-.4, .4)) + 
+  ggtitle("Attitude towards the collective action (Green Christmas)") + 
+  xlab("Green behaviour -1SD      Green behaviour +1SD") + 
+  ylab(NULL) 
+
+
+ggsave( "Interaction Plot.pdf", plot = p, units="in", width=6, height=4, dpi=300)
+
