@@ -148,7 +148,7 @@ dem_vars <- {
     filter(!is.na(condition))
 }
 
-#Third items in the DV scale needs to be recoded
+#Third item in the DV scale needs to be recoded
 DF$xmas_eval_3 <- 8 - DF$xmas_eval_3
 
 #participants that did not answer any of the items
@@ -206,7 +206,7 @@ persons.mod <- tam.wle(geb_mod)
 wle_estimates <- persons.mod$theta
 
 #adding the rasch model estimate to the DF
-DF$geb_wle <-wle_estimates
+DF$geb_wle <- wle_estimates
 
 
 ### GEB Scale minus 3 items
@@ -308,14 +308,14 @@ emtrends(mod, "condition", var="geb_stn")
 
 # Comparing slopes 
 emtrends(mod, pairwise ~ condition, var="geb_stn")
-
+#none of the comparisons are significant
 
 
 (mylist <- list(geb_stn=c(-1, 1), 
                 condition=c("ControlCondition",
                             "MinorityCondition","MajorityCondition")))
 emmod <- emmeans(mod, ~ geb_stn*condition, at=mylist)
-contrast(emmod, "pairwise",by="condition")
+contrast(emmod, "pairwise",by="condition") 
 
 # Plot using emmip
 emmip(mod, condition ~ geb_stn, at=mylist,CIs=TRUE)
@@ -328,6 +328,27 @@ moddat <- emmip(mod,geb_stn~condition,at=mylist, CIs=TRUE, plotit=FALSE)
 (p <- ggplot(data=moddat, aes(x=geb_stn,y=yvar, color=condition)) + geom_line())
 
 
+#Simple simple slopes 
+
+mod.ss <- lm(xmas_eval ~  0 + condition + geb_stn:condition, data = DF)
+summary(mod.ss)
+confint(mod.ss)
+
+
+
+DF$geb.plus <- DF$geb_stn + 1
+DF$geb.minus <- DF$geb_stn - 1
+
+m.plus <- lm(xmas_eval ~ geb.plus*condition, data = DF)
+summary(m.plus)
+confint(m.plus)
+
+m.minus <- lm(xmas_eval ~ geb.minus*condition, data = DF)
+summary(m.minus)
+confint(m.minus)
+
+
+summary(lm(geb_wle ~ condition, data = DF))
 # ############################################################
 #                       EFFECT SIZES
 # ############################################################
@@ -418,6 +439,7 @@ pwr.r.test(n = 210, r = Lalot.rep.non.upper, sig.level = .05) # 0.7273663
 # N needed for 80% power to detect effect
 pwr.r.test(r = Lalot.rep.non.upper, sig.level = .05, power = .80) #250.1395
 
+
 # ############################################################
 #                ANALYSIS WITH EXCLUSIONS 
 # ############################################################
@@ -432,19 +454,38 @@ summary(mod.excl)
 
 Anova(mod.excl, type = "III")
 
-#same results, main effect of prior green behavior and a significant interaction (not the one hypothesized).
+confint(mod.excl)
+
+# same results, main effect of prior green behavior and a significant interaction (not the one hypothesized).
+
+#effect size
+### replication study - contrast of interest
+Lalot.rep.excl.es <- esComp(x = 0.862, df2 = 510, N = 526, esType = "t")
+Lalot.rep.excl.es #0.03814223
+
+# calculate 95% CI
+CIr(r= Lalot.rep.excl.es, n = 526, level = .95) # -0.04750671  0.12323439
+
+
+### replication study - contrast not of interest
+Lalot.rep.excl.es.2 <- esComp(x = 2.156, df2 = 510, N = 526, esType = "t")
+Lalot.rep.excl.es.2 #0.09503716
+
+# calculate 95% CI
+CIr(r= Lalot.rep.excl.es.2, n = 526, level = .95) #  0.009621314 0.179076175
 
 # ############################################################
 #          ANALYSIS AFTER EXCLUDING THREE GEB ITEMS
 # ############################################################
 
 #Creating a new model with the short scale
-mod.short <- lm(xmas_eval ~  geb_short_stn + condition + geb_short_stn*condition, data = DF)
+mod.short <- lm(xmas_eval ~ geb_short_stn*condition, data = DF)
 
 summary(mod.short)
 
 Anova(mod.short, type = "III")
 
+confint(mod.short)
 #results remain unchanged. 
 
 
@@ -461,6 +502,19 @@ est.compare$diff <- est.compare$con_wle_est - est.compare$wle_estimates
 
 summary(est.compare)
 
+
+### Running the model again with EAP estimates
+geb_eap <- read_csv("geb_eap.txt", col_names = F)
+
+DF$geb_eap <- geb_eap %>% 
+  pull(X1)
+
+mod.eap <- lm(xmas_eval ~  scale(geb_eap) + condition + scale(geb_eap)*condition, data = DF)
+
+summary(mod.eap)
+
+Anova(mod.eap, type = "III")
+# Same results
 
 # ############################################################
 #                    TABLES AND PLOTS
